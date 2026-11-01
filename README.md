@@ -17,6 +17,9 @@ the runbook, and the pull-request habits that go with them.
   took. The time is stamped automatically.
 - Anyone with access can **list visits**, newest first, for one site or for
   all sites.
+- A manager pulls a **per-site summary**: how many visits, first and last
+  date, which technicians have been there, and which assets get the most
+  attention.
 - The data lives in a single file on the server. Backing it up is copying
   one file. Restoring it is copying it back. See the [runbook](docs/runbook.md).
 
@@ -59,6 +62,12 @@ List the visits at one site:
 curl 'http://127.0.0.1:8000/visits?site=North%20Plant'
 ```
 
+Summarise a site:
+
+```bash
+curl 'http://127.0.0.1:8000/sites/North%20Plant/summary'
+```
+
 ### Endpoints
 
 | Method | Path | Purpose |
@@ -66,6 +75,7 @@ curl 'http://127.0.0.1:8000/visits?site=North%20Plant'
 | `GET` | `/health` | Service is up and the database answers. Used by the deployment health check. |
 | `POST` | `/visits` | Record a visit. Returns the stored record with its `id`. |
 | `GET` | `/visits` | List visits, newest first. Optional `?site=` filter, `?limit=` (default 100). |
+| `GET` | `/sites/{site}/summary` | Roll-up for one site: visit count, date range, technicians, per-asset counts. 404 if the site has no visits. |
 
 Input rules are in [`app/schemas.py`](app/schemas.py). Bad input gets an
 HTTP 422 with a message naming the field; nothing is written.
