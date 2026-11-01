@@ -52,3 +52,22 @@ class VisitOut(VisitIn):
 
     id: int
     visited_at: datetime
+
+
+class AssetSummary(BaseModel):
+    """How often one asset at a site has been visited, and when last."""
+
+    asset_tag: str
+    visit_count: int
+    last_visit: datetime
+
+
+class SiteSummary(BaseModel):
+    """Everything a manager wants to know about a site in one call."""
+
+    site: str
+    visit_count: int
+    first_visit: datetime
+    last_visit: datetime
+    technicians: list[str]
+    assets: list[AssetSummary]

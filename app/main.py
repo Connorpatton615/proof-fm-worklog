@@ -9,11 +9,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlite3 import Connection
 
 from app import db
-from app.schemas import VisitIn, VisitOut
+from app.schemas import AssetSummary, SiteSummary, VisitIn, VisitOut
 
 VISIT_COLUMNS = (
     "id, site, asset_tag, technician, note, photo_filename, visited_at"
@@ -87,6 +87,32 @@ def create_app(db_path: str | os.PathLike[str] | None = None) -> FastAPI:
         params.append(limit)
         rows = conn.execute(sql, params).fetchall()
         return [VisitOut(**dict(row)) for row in rows]
+
+    @app.get("/sites/{site}/summary", response_model=SiteSummary, tags=["sites"])
+    def site_summary(site: str, conn: Connection = Depends(get_conn)) -> SiteSummary:
+        """Roll up one site: how many visits, when, by whom, to which assets."""
+        totals = conn.execute(
+            "SELECT COUNT(*) AS visit_count, MIN(visited_at) AS first_visit, "
+            "MAX(visited_at) AS last_visit FROM visits WHERE site = ?",
+            (site,),
+        ).fetchone()
+        if totals["visit_count"] == 0:
+            raise HTTPException(status_code=404, detail=f"No visits recorded for site {site!r}")
+        technicians = conn.execute(
+            "SELECT DISTINCT technician FROM visits WHERE site = ? ORDER BY technician",
+            (site,),
+        ).fetchall()
+        assets = conn.execute(
+            "SELECT asset_tag, COUNT(*) AS visit_count, MAX(visited_at) AS last_visit "
+            "FROM visits WHERE site = ? GROUP BY asset_tag ORDER BY last_visit DESC",
+            (site,),
+        ).fetchall()
+        return SiteSummary(
+            site=site,
+            technicians=[row["technician"] for row in technicians],
+            assets=[AssetSummary(**dict(row)) for row in assets],
+            **dict(totals),
+        )
 
     return app
 
