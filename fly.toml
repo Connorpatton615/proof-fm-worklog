@@ -1,0 +1,38 @@
+# Fly.io deployment. First-time setup (run once, by hand):
+#   fly launch --no-deploy --copy-config
+#   fly volumes create worklog_data --size 1
+#   fly deploy
+# The volume keeps /data/worklog.db across deploys and restarts.
+
+app = "proof-fm-worklog"
+primary_region = "atl"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  WORKLOG_DB = "/data/worklog.db"
+
+[[mounts]]
+  source = "worklog_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  # SQLite is a single-writer file: run exactly one machine.
+  min_machines_running = 0
+  max_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
