@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# Let a bare `pytest` find the app package from a fresh checkout (CI runs
+# exactly that). Without this only `python -m pytest` works.
+pythonpath = ["."]
+testpaths = ["tests"]
