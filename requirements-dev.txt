@@ -1,0 +1,4 @@
+# Test dependencies. Installed in CI and by developers, not in the container.
+-r requirements.txt
+pytest==9.2.0
+httpx2==2.16.0
